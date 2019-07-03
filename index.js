@@ -70,29 +70,12 @@ var moscaBackend = {
 
 var moscaInterfaces = [];
 
-// mandatory
-var mqtts = {
-  type: "mqtts",
-  port: 8883,
-  credentials:
-  {
-    keyPath: config.mosca_tls.key,
-    certPath: config.mosca_tls.cert,
-    caPaths: [config.mosca_tls.ca],
-    requestCert: true, // enable requesting certificate from clients
-    rejectUnauthorized: true // only accept clients with valid certificate
-  }
+// unsecure only
+var mqtt = {
+  type: "mqtt",
+  port: 1883,
 };
-moscaInterfaces.push(mqtts);
-
-// optional
-if (config.allow_unsecured_mode === 'true') {
-  var mqtt = {
-    type: "mqtt",
-    port: 1883
-  };
-  moscaInterfaces.push(mqtt);
-}
+moscaInterfaces.push(mqtt);
 
 var moscaSettings = {
   backend: moscaBackend,
@@ -147,38 +130,14 @@ function authenticate(client, username, password, callback) {
   // Get tenant and deviceId from client.id
   let ids = parseClientIdOrTopic(client.id);
   if (!ids) {
-    if (client.connection.stream.hasOwnProperty('TLSSocket')) {
-      //reject client connection
-      callback(null, false);
-      logger.warn(`Connection rejected due to invalid ${client.id}.`);
-      return;
-    }
-    //
-    else {
       // (backward compatibility)
       // authorize
       cache.set(client.id, { client: client, tenant: null, deviceId: null });
       callback(null, true);
       return;
-    }
   }
 
-  // Condition 2: Client certificate belongs to the
-  // device identified in the clientId
-  // TODO: the clientId must contain the tenant too!
-  if (client.connection.stream.hasOwnProperty('TLSSocket')) {
-    clientCertificate = client.connection.stream.getPeerCertificate();
-    if (!clientCertificate.hasOwnProperty('subject') ||
-      !clientCertificate.subject.hasOwnProperty('CN') ||
-      clientCertificate.subject.CN !== ids.device) {
-      //reject client connection
-      callback(null, false);
-      logger.warn(`Connection rejected for ${client.id}. Invalid client certificate.`);
-      return;
-    }
-  }
-
-  // Condition 3: Device exists in dojot
+  // Condition 2: Device exists in dojot
   iota.getDevice(ids.device, ids.tenant).then((device) => {
     // add device to cache
     cache.set(client.id, { client: client, tenant: ids.tenant, deviceId: ids.device });

@@ -11,12 +11,13 @@ RUN npm install
 COPY . .
 
 FROM node:8.14.0-alpine
-RUN apk add python py-openssl py-requests --no-cache
+RUN apk add --no-cache tini
+ENTRYPOINT ["/sbin/tini", "--"]
+
 COPY --from=basis  /opt/iot-agent /opt/iot-agent
-RUN mkdir -p /opt/iot-agent/mosca/certs/
 WORKDIR /opt/iot-agent
+COPY . .
 
 
-EXPOSE 8883
 EXPOSE 1883
-CMD ["/opt/iot-agent/entrypoint.sh"]
+CMD ["node", "index.js"]
