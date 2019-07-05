@@ -84,8 +84,6 @@ var moscaSettings = {
     host: moscaBackend.host
   },
   interfaces: moscaInterfaces,
-  //TODO: environment variable or config file
-  id: 'dojot-mqtt',
   stats: true,
   logger: { name: 'MoscaServer', level: 'info' }
 };
