@@ -1,7 +1,0 @@
-node_modules
-docs/build
-.idea/
-.vscode/
-__pycache__/
-*.pyc
-env/
