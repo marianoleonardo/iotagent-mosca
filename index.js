@@ -58,6 +58,18 @@ logger.debug("... configuration endpoints were initialized");
 //          deviceId: <deviceId> }
 const cache = new Map();
 
+// known devices
+// Keeps all known device IDs into dojot
+const knownDevices = new Set();
+
+// Update known devices
+iota.messenger.on('iotagent.device', 'device.create', (tenant, event) => {
+  knownDevices.add(`${event.meta.service}:${event.data.id}`);
+});
+
+// Bootstrap knwon devices
+iota.messenger.generateDeviceCreateEventForActiveDevices();
+
 // Mosca Settings
 var moscaBackend = {
   type: 'redis',
@@ -138,35 +150,31 @@ function authenticate(client, username, password, callback) {
   }
 
   // Condition 2: Device exists in dojot
-  iota.getDevice(ids.device, ids.tenant).then((device) => {
+  if(knownDevices.has(`${ids.tenant}:${ids.device}`)) {
     // add device to cache
     cache.set(client.id, { client: client, tenant: ids.tenant, deviceId: ids.device });
     //authorize client connection
     callback(null, true);
     logger.debug('Connection authorized for', client.id);
-  }).catch((error) => {
-    //reject client connection
-    callback(null, false);
-    logger.warn(`Connection rejected for ${client.id}. Device doesn't exist in dojot.`);
-  });
+  }
+  else {
+      //reject client connection
+      callback(null, false);
+      logger.warn(`Connection rejected for ${client.id}. Device doesn't exist in dojot.`);
+  }
+
 }
 
-  async function checkDeviceExist(ids, cacheEntry, client) {
-    let deviceExist = false;
-    await iota.getDevice(ids.device, ids.tenant).then((device) => {
-      logger.debug(`Got device ${JSON.stringify(device)}`);
+function checkDeviceExist(ids, cacheEntry, client) {
+  if(knownDevices.has(`${ids.tenant}:${ids.device}`)) {
       // add device to cache
       cacheEntry.tenant = ids.tenant;
       cacheEntry.deviceId = ids.device;
       cache.set(client.id, cacheEntry);
-      deviceExist = true;
-    }).catch((error) => {
-      //reject
-      logger.debug(`Got error ${error} while trying to get device ${ids.tenant}:${ids.device}.`);
-
-    });
-    return deviceExist;
+    return true;
   }
+  return false;
+}
 
 // Function to authourize client to publish to
 // topic: {tenant}/{deviceId}/attrs
@@ -193,7 +201,7 @@ async function authorizePublish(client, topic, payload, callback) {
   // (backward compatibility)
   if(cacheEntry.deviceId === null) {
     // Device exists in dojot
-    deviceExist = await checkDeviceExist(ids, cacheEntry, client);
+    deviceExist = checkDeviceExist(ids, cacheEntry, client);
 
   }
 
@@ -259,7 +267,7 @@ async function authorizeSubscribe(client, topic, callback) {
   // (backward compatibility)
   if (cacheEntry.deviceId === null) {
     // Device exists in dojot
-    deviceExist = await checkDeviceExist(ids, cacheEntry, client);
+    deviceExist = checkDeviceExist(ids, cacheEntry, client);
 
   }
 
@@ -498,6 +506,7 @@ const disconnectCachedDevice = (event) => {
 iota.messenger.on('iotagent.device', 'device.remove', (tenant, event) => {
   logger.debug('Got device.remove event from Device Manager', tenant);
   disconnectCachedDevice(event);
+  knownDevices.delete(`${event.meta.service}:${event.data.id}`);
 });
 
 }).catch((error)=> {
