@@ -60,16 +60,15 @@ def retrieveCAChain():
 
 
 def retrieveCRL():
-    if not os.path.isfile(conf.certsDir + "/ca.crl"):
-        try:
-            rawCRL = certUtils.retrieveCACRL(conf.EJBCA_API_URL, conf.CAName)
-            certUtils.saveCRL(conf.certsDir + "/ca.crl", rawCRL)
-        except KeyError:
-            print "Invalid answer returned from EJBCA."
-            exit(-1)
-        except crypto.Error:
-            print("Could not decode retrieved CRL")
-            exit(-1)
+    try:
+        rawCRL = certUtils.retrieveCACRL(conf.EJBCA_API_URL, conf.CAName)
+        certUtils.saveCRL(conf.certsDir + "/ca.crl", rawCRL)
+    except KeyError:
+        print "Invalid answer returned from EJBCA."
+        exit(-1)
+    except crypto.Error:
+        print("Could not decode retrieved CRL")
+        exit(-1)
 
 
 if __name__ == '__main__':

@@ -11,6 +11,7 @@ config.mosca_tls = {
     cert: process.env.MOSCA_TLS_SECURE_CERT || '/opt/iot-agent/mosca/certs/mosca.crt',
     key: process.env.MOSCA_TLS_SECURE_KEY || '/opt/iot-agent/mosca/certs/mosca.key',
     ca: process.env.MOSCA_TLS_CA_CERT || '/opt/iot-agent/mosca/certs/ca.crt',
+    //crl is load only when service is init
     crl: process.env.MOSCA_TLS_CA_CRL || '/opt/iot-agent/mosca/certs/ca.crl'
 };
 
