@@ -32,11 +32,11 @@ jobs:
         npm test
 
     - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          file: coverage/lcov.info # Created when 'npm test' is executed
-          flags: IotAgentMosca # Flags allow you to isolate coverage reports for different tests
-          name: iotagent-mosca # Custom name for the upload
+      uses: codecov/codecov-action@v1
+      with:
+        file: coverage/lcov.info # Created when 'npm test' is executed
+        flags: IotAgentMosca # Flags allow you to isolate coverage reports for different tests
+        name: iotagent-mosca # Custom name for the upload
 
   docker-hub:
     needs: npm-build
